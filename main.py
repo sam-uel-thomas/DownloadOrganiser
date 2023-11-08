@@ -19,21 +19,27 @@ misc_folder = os.path.expanduser("~") + "/Downloads/Misc"
 
 
 class DownloadSorter(FileSystemEventHandler):
+
+
     def finished_download(self, file_path):
         while True:
-            file_size = os.path.getsize(file_path)
-            time.sleep(5)
-            if file_size == os.path.getsize(file_path):
-                return True
+            if os.path.exists(file_path):
+                file_size = os.path.getsize(file_path)
+                time.sleep(5)
+                if file_size == os.path.getsize(file_path):
+                    return True
+            else:
+                return False
 
     def on_modified(self, event):
-        if os.path.basename(event.src_path).startswith(".company"):
+        if os.path.basename(event.src_path).startswith(".company") or os.path.basename(event.src_path).endswith(".crdownload") or os.path.basename(event.src_path) == ".DS_STORE":
             return
         
         if not event.is_directory:
             file_extension = os.path.splitext(event.src_path)[-1].lower()
             if file_extension in destination_folders:
                 destination_folder = destination_folders[file_extension]
+                destination_path = os.path.join(destination_folder, os.path.basename(event.src_path))
                 if self.finished_download(event.src_path):
                     if not os.path.exists(destination_path):
                         shutil.move(event.src_path, destination_path)
@@ -41,12 +47,21 @@ class DownloadSorter(FileSystemEventHandler):
                         base_name, ext = os.path.splitext(os.path.basename(event.src_path))
                         count = 1
                         while os.path.exists(destination_path):
-                            new_base_name = f"{base_name}_{count}"
+                            new_base_name = f"{base_name} ({count})"
                             destination_path = os.path.join(destination_folder, f"{new_base_name}{ext}")
                             count += 1
                         shutil.move(event.src_path, destination_path)
             else:
-                shutil.move(event.src_path, misc_folder)
+                if not os.path.exists(misc_folder):
+                    shutil.move(event.src_path, misc_folder)
+                else:
+                    base_name, ext = os.path.splitext(os.path.basename(event.src_path))
+                    count = 1
+                    while os.path.exists(misc_folder):
+                        new_base_name = f"{base_name} ({count})"
+                        destination_path = os.path.join(misc_folder, f"{new_base_name}{ext}")
+                        count += 1
+                    shutil.move(event.src_path, misc_folder)
 
 if __name__ == "__main__":
     event_handler = DownloadSorter()
